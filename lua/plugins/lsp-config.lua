@@ -2,21 +2,22 @@ return {
   -- Mason core
   { "mason-org/mason.nvim", opts = {} },
 
-  -- Mason <-> LSPConfig bridge (v2+). It can auto-enable servers.
+  -- Mason <-> LSPConfig bridge
   {
     "mason-org/mason-lspconfig.nvim",
     dependencies = { "neovim/nvim-lspconfig" },
     opts = {
-      -- Use nvim-lspconfig server names
-      ensure_installed = { "lua_ls", "ts_ls" },
-      -- automatic_enable = true is the default; leaving as-is lets Mason call :lua vim.lsp.enable()
+      ensure_installed = { "lua_ls", "ts_ls", "html", "cssls" },
     },
     config = function(_, opts)
       require("mason").setup()
       require("mason-lspconfig").setup(opts)
 
-      -- Per-server tweaks with the *new* API
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+
+      -- Lua LSP 
       vim.lsp.config("lua_ls", {
+        capabilities = capabilities,
         settings = {
           Lua = {
             diagnostics = { globals = { "vim" } },
@@ -25,14 +26,32 @@ return {
         },
       })
 
+      -- TypeScript / JavaScript
       vim.lsp.config("ts_ls", {
-        -- add ts/js settings if you need them later
+        capabilities = capabilities,
       })
 
-      -- Optional: explicitly enable now (Mason v2 also auto-enables if installed)
-      vim.lsp.enable({ "lua_ls", "ts_ls" })
+      -- HTML LSP
+      vim.lsp.config("html", {
+        capabilities = capabilities,
+        init_options = {
+          configurationSection = { "html", "css", "javascript" },
+          embeddedLanguages = {
+            css = true,
+            javascript = true,
+          },
+          provideFormatter = true,
+        },
+      })
 
-      -- Buffer-local keymaps on attach (modern best practice)
+      -- CSS LSP
+      vim.lsp.config("cssls", {
+        capabilities = capabilities,
+      })
+
+      vim.lsp.enable({ "lua_ls", "ts_ls", "html", "cssls" })
+
+      -- Buffer
       vim.api.nvim_create_autocmd("LspAttach", {
         callback = function(ev)
           local b = { buffer = ev.buf }
